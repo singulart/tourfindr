@@ -1,6 +1,7 @@
 import sys, getopt
 import requests
 import lxml.html
+import json
 from lxml.cssselect import CSSSelector
 from termcolor import colored
 from math import cos, asin, sqrt
@@ -27,19 +28,20 @@ has_next = CSSSelector('.next')
 
 api_key = ''
 
+
 def main(argv):
 	print colored('TourFinder v0.1.0 (c) singulart@i.ua', 'yellow')
 	print colored('Simple utility for looking up tours of your favourite musicians', 'yellow')
 
 	style = ''
 	try:
-		opts, args = getopt.getopt(argv,"hs:",["style="])
+		opts, args = getopt.getopt(argv, "hs:", ["style="])
 	except getopt.GetoptError:
 		usage()
 
 	try:
-		with open (".google-api-key", "r") as myfile:
-			api_key=myfile.read()
+		with open(".google-api-key", "r") as myfile:
+			api_key = myfile.read()
 			print api_key
 	except:
 		print colored('Unable to load Google API Key', 'red')
@@ -84,7 +86,7 @@ def main(argv):
 		tree = lxml.html.fromstring(r.text)
 		is_on_tour = on_tour(tree)
 		if is_on_tour:
-			print colored('%s is on tour' %href, 'red')
+			print colored('%s is on tour' % href, 'red')
 			now_on_tour.extend(href)
 			r = requests.get('http://www.last.fm%s/+events' % href)
 			tree = lxml.html.fromstring(r.text)
@@ -93,17 +95,24 @@ def main(argv):
 			dates_results = tree.xpath(date_xpath)
 			if cities_css and countries_css:
 				for d in range(0, len(dates_results)):
-					print ' %s in %s, %s' %(dates_results[d].attrib['datetime'], cities_results[d].text, countries_results[d].text)
+					city_coords = json.loads(requests.get(
+						"https://maps.googleapis.com/maps/api/geocode/json?address=%s,%s&key=%s" % (
+						cities_results[d].text, countries_results[d].text, api_key)).text)
+					print ' %s in %s, %s (%s, %s)' % (
+					dates_results[d].attrib['datetime'], cities_results[d].text, countries_results[d].text,
+					city_coords['results'][0]['geometry']['location']['lat'], city_coords['results'][0]['geometry']['location']['lng'])
 
 
 def distance(lat1, lon1, lat2, lon2):
 	p = 0.017453292519943295
-	a = 0.5 - cos((lat2 - lat1) * p)/2 + cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2
+	a = 0.5 - cos((lat2 - lat1) * p) / 2 + cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2
 	return 12742 * asin(sqrt(a))
+
 
 def usage():
 	print 'tours.py -s <last.fm style tag>'
 	sys.exit(2)
+
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
