@@ -30,39 +30,52 @@ tr[td[@class='events-list-item-venue']/div]
 # Next navigation page
 has_next = CSSSelector('.next')
 
-api_key = ''
-my_lat = 50.4501
-my_lng = 30.5234
-radius_km = 2000
-months_advance = 3
-
 
 def main(argv):
 	print colored('TourFinder v0.1.0 (c) singulart@i.ua', 'yellow')
 	print colored('Simple utility for looking up tours of your favourite musicians', 'yellow')
 
 	style = ''
+	api_key = ''
+	my_lat = 0
+	my_lng = 0
+	radius_km = 2000
+	months_advance = 3
+
 	try:
-		opts, args = getopt.getopt(argv, "hs:", ["style="])
+		opts, args = getopt.getopt(argv, "hs:", ["style=", "lat=", "lng="])
 	except getopt.GetoptError:
 		usage()
 
 	try:
 		with open(".google-api-key", "r") as myfile:
 			api_key = myfile.read()
-			print api_key
+			if api_key:
+				print api_key
+			else:
+				print colored(
+					'No Google API key found. Check that the file .google-api-key exists and contains your key')
+				exit(1)
 	except:
 		print colored('Unable to load Google API Key', 'red')
+		exit(1)
 
 	for opt, arg in opts:
 		if opt == '-h':
-			print 'tours.py -s <last.fm style tag>'
+			print 'python tours.py -s <style> --lat=<your city latitude> --lng=<your city longitude>'
 			sys.exit()
 		elif opt in ("-s", "--style"):
 			style = arg
+		elif opt in ("--lat"):
+			my_lat = float(arg)
+		elif opt in ("--lng"):
+			my_lng = float(arg)
 
-	if style == '':
+	if style == '' or my_lat <= 0 or my_lng == 0:
 		usage()
+
+	print "Style set to %s. Looking for concerts within the radius of %d km from (%f,%f)" % (
+	style, radius_km, my_lat, my_lng)
 
 	page = 1
 	proceed = True
@@ -102,21 +115,21 @@ def main(argv):
 			dates_results = tree.xpath(date_xpath)
 			if cities_css and countries_css:
 				for d in range(0, len(dates_results)):
-					advance_period = date.today() + relativedelta(months =+ months_advance)
+					advance_period = date.today() + relativedelta(months=+ months_advance)
 					concert_date = datetime.strptime(dates_results[d].attrib['datetime'], '%Y-%m-%dT00:00:00').date()
 					if concert_date > advance_period:
 						# Access to Google API to get the coordinates of the city
 						city_coords = json.loads(requests.get(
-							"https://maps.googleapis.com/maps/api/geocode/json?address=%s,%s&key=%s" % (
-							cities_results[d].text, countries_results[d].text, api_key)).text)
+								"https://maps.googleapis.com/maps/api/geocode/json?address=%s,%s&key=%s" % (
+									cities_results[d].text, countries_results[d].text, api_key)).text)
 						city_lat = city_coords['results'][0]['geometry']['location']['lat']
 						city_lng = city_coords['results'][0]['geometry']['location']['lng']
 
 						# Filter by desired radius (in kilometres)
 						if distance(my_lat, my_lng, city_lat, city_lng) < radius_km:
 							print ' %s in %s, %s (%s, %s)' % (
-							dates_results[d].attrib['datetime'], cities_results[d].text, countries_results[d].text,
-							city_lat, city_lng)
+								dates_results[d].attrib['datetime'], cities_results[d].text, countries_results[d].text,
+								city_lat, city_lng)
 
 
 def distance(lat1, lon1, lat2, lon2):
@@ -126,7 +139,7 @@ def distance(lat1, lon1, lat2, lon2):
 
 
 def usage():
-	print 'python tours.py -s <last.fm style tag>'
+	print 'python tours.py -s <style> --lat=<your city latitude> --lng=<your city longitude>'
 	sys.exit(2)
 
 
