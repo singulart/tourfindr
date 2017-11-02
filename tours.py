@@ -14,7 +14,7 @@ from math import cos, asin, sqrt
 on_tour = CSSSelector('.label')
 
 # Band link
-bands = CSSSelector('.grid-items-item-main-text > .link-block-target')
+bands = CSSSelector('.link-block-target')
 
 # Concert City
 cities_css = CSSSelector('.events-list-item-venue--city')
