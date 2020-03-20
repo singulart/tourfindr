@@ -1,5 +1,9 @@
 .idea
-
+tourfindr.iml
+.DS_Store
+.venv/
+*.tmp
+*~
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
