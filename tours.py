@@ -31,7 +31,7 @@ has_next = CSSSelector('.next')
 
 
 def main(argv):
-    print colored('TourFinder v0.1.0 (c) singulart@protonmail.com', 'yellow')
+    print colored('TourFinder v0.1.1 (c) singulart@protonmail.com', 'yellow')
     print colored('Simple utility for looking up tours of your favourite musicians', 'yellow')
 
     style = ''
